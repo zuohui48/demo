@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tune In</title>
+<style>
+  :root {
+    --bg: #f6f3ee;
+    --panel: #ffffff;
+    --ink: #1d1b22;
+    --muted: #6b6672;
+    --line: #e2ddd5;
+    --dial: #efe9df;
+    --accent: #5b3fd6;
+    --accent-ink: #ffffff;
+    --z2: #f2b84b;
+    --z3: #ef7d3c;
+    --z4: #d9473a;
+    --needle: #1d1b22;
+    --shutter: #2c2a6b;
+    --left: #2e8fbf;
+    --right: #c2477a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15141a; --panel: #1f1e26; --ink: #f2f0f5; --muted: #a29fab;
+      --line: #34323d; --dial: #2a2833; --accent: #8e78ff; --accent-ink: #111;
+      --needle: #f2f0f5; --shutter: #3b3891;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15141a; --panel: #1f1e26; --ink: #f2f0f5; --muted: #a29fab;
+    --line: #34323d; --dial: #2a2833; --accent: #8e78ff; --accent-ink: #111;
+    --needle: #f2f0f5; --shutter: #3b3891;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 16px;
+  }
+  header { width: 100%; max-width: 640px; display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  h1 { font-size: 1.4rem; margin: 0; letter-spacing: .02em; }
+  .status { color: var(--muted); font-size: .9rem; text-align: right; }
+  main { width: 100%; max-width: 640px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+  .panel + .panel { margin-top: 12px; }
+  h2 { margin: 0 0 8px; font-size: 1.25rem; }
+  p { margin: 0 0 12px; }
+  .muted { color: var(--muted); }
+  label { display: block; font-size: .9rem; color: var(--muted); margin: 12px 0 4px; }
+  input[type=text], select {
+    width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); font: inherit;
+  }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  button {
+    font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 12px 18px;
+    background: var(--accent); color: var(--accent-ink); cursor: pointer;
+  }
+  button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:focus-visible, input:focus-visible, svg:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .card { display: flex; justify-content: space-between; gap: 12px; margin: 4px 0 8px; font-weight: 700; font-size: 1.1rem; }
+  .card span { flex: 1; padding: 8px 12px; border-radius: 10px; color: #fff; }
+  .card .l { background: var(--left); }
+  .card .r { background: var(--right); text-align: right; }
+  .dialwrap { position: relative; }
+  svg.dial { width: 100%; height: auto; display: block; touch-action: none; user-select: none; }
+  svg.dial.interactive { cursor: grab; }
+  .shutter { transform-box: view-box; transform-origin: 200px 200px; transition: transform 1.1s cubic-bezier(.6,0,.3,1); }
+  .shutter.open { transform: rotate(180deg); }
+  .clue { font-size: 1.3rem; font-weight: 700; text-align: center; padding: 10px; border: 2px dashed var(--line); border-radius: 12px; margin: 8px 0; word-break: break-word; }
+  .big { font-size: 2.6rem; font-weight: 800; text-align: center; margin: 4px 0; }
+  .center { text-align: center; }
+  .center .row { justify-content: center; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  td, th { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .legend { display: flex; gap: 14px; justify-content: center; font-size: .85rem; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+  .rules li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎯 Tune In</h1>
+  <div class="status" id="status"></div>
+</header>
+<main id="app"></main>
+
+<script>
+// ---------- Spectrum cards (left extreme, right extreme) ----------
+const CARDS = [
+  ["Cold","Hot"],["Useless","Useful"],["Boring","Exciting"],["Cheap","Expensive"],
+  ["Underrated","Overrated"],["Easy to spell","Hard to spell"],["Quiet","Loud"],
+  ["Healthy food","Junk food"],["Ugly","Beautiful"],["Normal pet","Weird pet"],
+  ["Bad movie","Great movie"],["Soft","Hard"],["Tiny","Enormous"],["Forgettable","Unforgettable"],
+  ["Smells bad","Smells good"],["Safe","Dangerous"],["Old-fashioned","Futuristic"],
+  ["Sad song","Happy song"],["Easy job","Hard job"],["Villain","Hero"],
+  ["Rare","Common"],["Fragile","Durable"],["Breakfast food","Dinner food"],
+  ["Introvert activity","Extrovert activity"],["Bad superpower","Great superpower"],
+  ["Mild","Spicy"],["Casual","Formal"],["Sweet","Savory"],["Unknown","Famous"],
+  ["Needs no skill","Needs lots of skill"],["Bad gift","Great gift"],["Relaxing","Stressful"],
+  ["Slow","Fast"],["Dry","Wet"],["Square","Round"],["Fiction","Non-fiction feeling"],
+  ["Indoor","Outdoor"],["Bad habit","Good habit"],["Mainstream","Niche"],
+  ["Low effort","High effort"],["Simple","Complicated"],["Childish","Mature"],
+  ["Lazy","Productive"],["Light","Heavy"],["Overpaid","Underpaid"],
+  ["Short-lived","Lasts forever"],["Bad smell to wake up to","Great smell to wake up to"],
+  ["Hard to sit on","Comfortable to sit on"],["Normal thing to own","Weird thing to own"],
+  ["Weak","Strong"],["Tastes bad","Tastes good"],["Unpopular opinion","Popular opinion"],
+  ["Scary animal","Cute animal"],["Worst vacation spot","Best vacation spot"],
+  ["Calm","Chaotic"],["Natural","Artificial"],["Easy to draw","Hard to draw"],
+  ["Ordinary","Magical"],["Bad first date","Great first date"],["Messy","Tidy"],
+  ["Cringe","Cool"],["Waste of money","Worth every penny"],["Morning thing","Night thing"],
+];
+
+// ---------- Geometry ----------
+const CX = 200, CY = 200, R = 180;
+const BAND = 7;               // width (deg) of each scoring band
+const ZONES = [               // [offset from target center in bands, points]
+  [-2.5,2],[-1.5,3],[-0.5,4],[0.5,3],[1.5,2]
+];
+const pt = (deg, r = R) => {
+  const t = deg * Math.PI / 180;
+  return [CX - r * Math.cos(t), CY - r * Math.sin(t)];
+};
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function wedge(a1, a2, r = R) {
+  a1 = clamp(a1, 0, 180); a2 = clamp(a2, 0, 180);
+  if (a2 <= a1) return "";
+  const [x1, y1] = pt(a1, r), [x2, y2] = pt(a2, r);
+  return `M${CX},${CY} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 0 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
+}
+function scoreFor(target, guess) {
+  const d = Math.abs(target - guess);
+  if (d <= BAND / 2) return 4;
+  if (d <= BAND * 1.5) return 3;
+  if (d <= BAND * 2.5) return 2;
+  return 0;
+}
+
+// ---------- State ----------
+const S = {
+  players: ["Player 1", "Player 2"],
+  rounds: 10,
+  round: 0,
+  deck: [],
+  card: null,
+  target: 90,
+  clue: "",
+  guess: 90,
+  history: [],
+};
+const $app = document.getElementById("app");
+const $status = document.getElementById("status");
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const psychic = () => S.players[S.round % 2];
+const guesser = () => S.players[(S.round + 1) % 2];
+const total = () => S.history.reduce((a, h) => a + h.points, 0);
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function drawCard() {
+  if (!S.deck.length) S.deck = shuffle(CARDS.slice());
+  S.card = S.deck.pop();
+}
+function setStatus() {
+  $status.innerHTML = `Round ${Math.min(S.round + 1, S.rounds)} / ${S.rounds}<br>Team score: <b>${total()}</b>`;
+}
+
+// ---------- Dial rendering ----------
+function dialSVG({ showTarget, showNeedle, interactive, shutter }) {
+  const zones = ZONES.map(([o, p]) => {
+    const a1 = S.target + o * BAND - BAND / 2, a2 = a1 + BAND;
+    const [lx, ly] = pt((a1 + a2) / 2, R - 16);
+    const inRange = (a1 + a2) / 2 >= 0 && (a1 + a2) / 2 <= 180;
+    return `<path d="${wedge(a1, a2)}" fill="var(--z${p})"/>` +
+      (inRange ? `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="800" fill="#fff">${p}</text>` : "");
+  }).join("");
+  const [nx, ny] = pt(S.guess, R - 6);
+  const ticks = Array.from({ length: 19 }, (_, i) => {
+    const [x1, y1] = pt(i * 10, R + 2), [x2, y2] = pt(i * 10, R + (i % 9 === 0 ? 12 : 7));
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--muted)" stroke-width="1.5"/>`;
+  }).join("");
+  return `
+  <svg class="dial ${interactive ? "interactive" : ""}" id="dial" viewBox="0 0 400 214"
+       ${interactive ? 'tabindex="0" role="slider" aria-label="Dial position" aria-valuemin="0" aria-valuemax="180" aria-valuenow="' + Math.round(S.guess) + '"' : 'aria-hidden="true"'}>
+    <defs><clipPath id="half"><rect x="0" y="0" width="400" height="${CY}"/></clipPath></defs>
+    <path d="${wedge(0, 180, R)}" fill="var(--dial)" stroke="var(--line)" stroke-width="2"/>
+    ${showTarget ? `<g id="zones">${zones}</g>` : ""}
+    ${shutter ? `<g clip-path="url(#half)"><path class="shutter" id="shutter" d="${wedge(0, 180, R + 1)}" fill="var(--shutter)"/></g>` : ""}
+    ${ticks}
+    ${showNeedle ? `
+      <line id="needle" x1="${CX}" y1="${CY}" x2="${nx}" y2="${ny}" stroke="var(--needle)" stroke-width="5" stroke-linecap="round"/>
+      <circle id="knob" cx="${nx}" cy="${ny}" r="9" fill="var(--needle)"/>` : ""}
+    <circle cx="${CX}" cy="${CY}" r="14" fill="var(--needle)"/>
+  </svg>`;
+}
+const cardHTML = () => `<div class="card"><span class="l">← ${esc(S.card[0])}</span><span class="r">${esc(S.card[1])} →</span></div>`;
+const legend = `<div class="legend"><span><i style="background:var(--z4)"></i>4 pts</span><span><i style="background:var(--z3)"></i>3 pts</span><span><i style="background:var(--z2)"></i>2 pts</span></div>`;
+
+function bindDial() {
+  const svg = document.getElementById("dial");
+  let dragging = false;
+  const update = (deg) => {
+    S.guess = clamp(deg, 0, 180);
+    const [nx, ny] = pt(S.guess, R - 6);
+    const n = document.getElementById("needle"), k = document.getElementById("knob");
+    n.setAttribute("x2", nx); n.setAttribute("y2", ny);
+    k.setAttribute("cx", nx); k.setAttribute("cy", ny);
+    svg.setAttribute("aria-valuenow", Math.round(S.guess));
+  };
+  const fromEvent = (e) => {
+    const r = svg.getBoundingClientRect();
+    const x = (e.clientX - r.left) * 400 / r.width - CX;
+    const y = CY - (e.clientY - r.top) * 214 / r.height;
+    let deg = Math.atan2(Math.max(y, 0), -x) * 180 / Math.PI;
+    update(deg);
+  };
+  svg.addEventListener("pointerdown", e => { dragging = true; svg.setPointerCapture(e.pointerId); fromEvent(e); });
+  svg.addEventListener("pointermove", e => dragging && fromEvent(e));
+  svg.addEventListener("pointerup", () => dragging = false);
+  svg.addEventListener("pointercancel", () => dragging = false);
+  svg.addEventListener("keydown", e => {
+    const step = e.shiftKey ? 5 : 1;
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") { update(S.guess - step); e.preventDefault(); }
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") { update(S.guess + step); e.preventDefault(); }
+  });
+}
+
+// ---------- Screens ----------
+function screenSetup() {
+  $status.textContent = "";
+  $app.innerHTML = `
+    <div class="panel">
+      <h2>A two-player mind-reading game</h2>
+      <p class="muted">One of you secretly sees where a target sits on a spectrum and gives a clue. The other turns the dial to where they think it is. Swap roles every round and score as a team.</p>
+      <label for="p1">Player 1</label><input type="text" id="p1" value="${esc(S.players[0])}" maxlength="20">
+      <label for="p2">Player 2</label><input type="text" id="p2" value="${esc(S.players[1])}" maxlength="20">
+      <label for="rounds">Rounds</label>
+      <select id="rounds">
+        ${[6, 8, 10, 12, 16].map(n => `<option value="${n}" ${n === S.rounds ? "selected" : ""}>${n} rounds (${n / 2} each as clue-giver)</option>`).join("")}
+      </select>
+      <div class="row"><button id="start">Start game</button></div>
+    </div>
+    <div class="panel">
+      <h2>How to play</h2>
+      <ol class="rules">
+        <li><b>Clue-giver</b> sees the hidden target on the dial and a spectrum like <i>Cold ↔ Hot</i>.</li>
+        <li>They give one clue that sits at that spot on the spectrum — e.g. target near “Hot” → <i>“lava”</i>; slightly warm → <i>“bath water”</i>.</li>
+        <li><b>Guesser</b> (who didn't see the target) turns the dial and locks in.</li>
+        <li>Reveal! Bullseye = 4, close = 3, near = 2. Swap roles each round.</li>
+      </ol>
+      <p class="muted">Playing on one device: pass it between you when prompted and don't peek.</p>
+    </div>`;
+  document.getElementById("start").onclick = () => {
+    S.players = [document.getElementById("p1").value.trim() || "Player 1", document.getElementById("p2").value.trim() || "Player 2"];
+    S.rounds = +document.getElementById("rounds").value;
+    S.round = 0; S.history = []; S.deck = [];
+    newRound();
+  };
+}
+
+function newRound() {
+  drawCard();
+  S.target = 8 + Math.random() * 164;
+  S.guess = 90; S.clue = "";
+  screenPass(psychic(), guesser(), "see the secret target", screenPsychic);
+}
+
+function screenPass(who, other, what, next) {
+  setStatus();
+  $app.innerHTML = `
+    <div class="panel center">
+      <p class="muted">Round ${S.round + 1} of ${S.rounds}</p>
+      <h2>Pass the device to ${esc(who)}</h2>
+      <p>${esc(who)} is about to ${what}.${other ? ` <b>${esc(other)}, look away!</b>` : ""}</p>
+      <div class="row"><button id="go">I'm ${esc(who)} — continue</button></div>
+    </div>`;
+  document.getElementById("go").onclick = next;
+}
+
+function screenPsychic() {
+  setStatus();
+  $app.innerHTML = `
+    <div class="panel">
+      <p class="muted">${esc(psychic())}, you're the clue-giver. Only you can see this.</p>
+      ${cardHTML()}
+      <div class="dialwrap">${dialSVG({ showTarget: true, showNeedle: false })}</div>
+      ${legend}
+      <label for="clue">Your clue (type it, or leave blank and say it out loud)</label>
+      <input type="text" id="clue" maxlength="60" autocomplete="off" placeholder="e.g. a cup of tea">
+      <div class="row">
+        <button id="done">Hide target & pass</button>
+        <button class="secondary" id="reroll">New spectrum</button>
+      </div>
+    </div>`;
+  document.getElementById("reroll").onclick = () => { drawCard(); screenPsychic(); };
+  const done = () => {
+    S.clue = document.getElementById("clue").value.trim();
+    screenPass(guesser(), null, "turn the dial", screenGuess);
+  };
+  document.getElementById("done").onclick = done;
+  document.getElementById("clue").addEventListener("keydown", e => { if (e.key === "Enter") done(); });
+}
+
+function screenGuess() {
+  setStatus();
+  $app.innerHTML = `
+    <div class="panel">
+      <p class="muted">${esc(guesser())}, drag the dial (or use arrow keys) to where ${esc(psychic())}'s clue belongs.</p>
+      ${cardHTML()}
+      <div class="clue">${S.clue ? "“" + esc(S.clue) + "”" : '<span class="muted">Clue given out loud</span>'}</div>
+      <div class="dialwrap">${dialSVG({ showTarget: false, showNeedle: true, interactive: true })}</div>
+      <div class="row"><button id="lock">Lock in guess</button></div>
+    </div>`;
+  bindDial();
+  document.getElementById("lock").onclick = screenReveal;
+}
+
+function screenReveal() {
+  const pts = scoreFor(S.target, S.guess);
+  S.history.push({ psychic: S.round % 2, card: S.card, clue: S.clue, points: pts });
+  setStatus();
+  const msg = { 4: "Bullseye! 🎯 Perfectly in tune.", 3: "So close! 🔥", 2: "On the right wavelength. 👍", 0: "Missed it… 📡 Static on the line." }[pts];
+  const last = S.round + 1 >= S.rounds;
+  $app.innerHTML = `
+    <div class="panel">
+      ${cardHTML()}
+      <div class="clue">${S.clue ? "“" + esc(S.clue) + "”" : '<span class="muted">Clue given out loud</span>'}</div>
+      <div class="dialwrap">${dialSVG({ showTarget: true, showNeedle: true, shutter: true })}</div>
+      ${legend}
+      <div class="center" id="result" style="opacity:0;transition:opacity .4s">
+        <div class="big">+${pts}</div>
+        <p>${msg}</p>
+        <div class="row"><button id="next">${last ? "See final results" : "Next round"}</button></div>
+      </div>
+    </div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById("shutter").classList.add("open")));
+  setTimeout(() => document.getElementById("result").style.opacity = 1, 1000);
+  document.getElementById("next").onclick = () => {
+    S.round++;
+    if (S.round >= S.rounds) screenEnd(); else newRound();
+  };
+}
+
+function screenEnd() {
+  $status.textContent = "";
+  const t = total(), max = S.rounds * 4, pct = t / max;
+  const rating = pct >= .8 ? "Telepathic. Are you sure you're two people?" :
+                 pct >= .6 ? "Strongly in sync — great teamwork!" :
+                 pct >= .4 ? "Solid connection with a bit of static." :
+                 pct >= .2 ? "Occasionally on the same channel." : "Totally different frequencies. Rematch?";
+  const by = [0, 1].map(i => S.history.filter(h => h.psychic === i).reduce((a, h) => a + h.points, 0));
+  const best = by[0] === by[1] ? "It's a tie for best clue-giver!" : `Best clue-giver: <b>${esc(S.players[by[0] > by[1] ? 0 : 1])}</b>`;
+  $app.innerHTML = `
+    <div class="panel center">
+      <p class="muted">Final team score</p>
+      <div class="big">${t} <span class="muted" style="font-size:1.2rem">/ ${max}</span></div>
+      <p>${rating}</p>
+      <p>${best}</p>
+      <div class="row"><button id="again">Play again</button><button class="secondary" id="setup">Change players</button></div>
+    </div>
+    <div class="panel">
+      <h2>Round by round</h2>
+      <table>
+        <tr><th>#</th><th>Clue-giver</th><th>Spectrum</th><th>Clue</th><th class="n">Pts</th></tr>
+        ${S.history.map((h, i) => `<tr><td>${i + 1}</td><td>${esc(S.players[h.psychic])}</td><td>${esc(h.card[0])} ↔ ${esc(h.card[1])}</td><td>${h.clue ? esc(h.clue) : '<span class="muted">(spoken)</span>'}</td><td class="n">${h.points}</td></tr>`).join("")}
+        <tr><td></td><td colspan="3"><b>${esc(S.players[0])}</b> as clue-giver: ${by[0]} · <b>${esc(S.players[1])}</b>: ${by[1]}</td><td class="n"><b>${t}</b></td></tr>
+      </table>
+    </div>`;
+  document.getElementById("again").onclick = () => { S.round = 0; S.history = []; newRound(); };
+  document.getElementById("setup").onclick = screenSetup;
+}
+
+screenSetup();
+</script>
+</body>
+</html>
