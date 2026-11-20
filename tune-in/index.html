@@ -83,6 +83,12 @@
   .legend { display: flex; gap: 14px; justify-content: center; font-size: .85rem; color: var(--muted); margin-top: 6px; }
   .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
   .rules li { margin-bottom: 6px; }
+  .error { color: var(--z4); font-weight: 600; margin: 0 0 12px; }
+  .code { font-size: 3rem; font-weight: 800; letter-spacing: .25em; margin: 4px 0 8px; padding-left: .25em; font-variant-numeric: tabular-nums; }
+  .link { word-break: break-all; font-size: .9rem; background: var(--bg); padding: 8px 10px; border-radius: 8px; user-select: all; }
+  .waiting { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  @media (prefers-reduced-motion: reduce) { .waiting { animation: none; } .shutter { transition: none; } }
 </style>
 </head>
 <body>
@@ -92,200 +98,9 @@
 </header>
 <main id="app"></main>
 
+<script src="cards.js"></script>
 <script>
-// ---------- Spectrum cards (left extreme, right extreme) ----------
-const CARDS = [
-  ["Cold", "Hot"],
-  ["Useless", "Useful"],
-  ["Boring", "Exciting"],
-  ["Cheap", "Expensive"],
-  ["Underrated", "Overrated"],
-  ["Easy to spell", "Hard to spell"],
-  ["Quiet", "Loud"],
-  ["Healthy food", "Junk food"],
-  ["Ugly", "Beautiful"],
-  ["Normal pet", "Weird pet"],
-  ["Bad movie", "Great movie"],
-  ["Soft", "Hard"],
-  ["Tiny", "Enormous"],
-  ["Forgettable", "Unforgettable"],
-  ["Smells bad", "Smells good"],
-  ["Safe", "Dangerous"],
-  ["Old-fashioned", "Futuristic"],
-  ["Sad song", "Happy song"],
-  ["Easy job", "Hard job"],
-  ["Villain", "Hero"],
-  ["Rare", "Common"],
-  ["Fragile", "Durable"],
-  ["Breakfast food", "Dinner food"],
-  ["Introvert activity", "Extrovert activity"],
-  ["Bad superpower", "Great superpower"],
-  ["Mild", "Spicy"],
-  ["Casual", "Formal"],
-  ["Sweet", "Savory"],
-  ["Unknown", "Famous"],
-  ["Needs no skill", "Needs lots of skill"],
-  ["Bad gift", "Great gift"],
-  ["Relaxing", "Stressful"],
-  ["Slow", "Fast"],
-  ["Dry", "Wet"],
-  ["Square", "Round"],
-  ["Fiction", "Non-fiction"],
-  ["Indoor", "Outdoor"],
-  ["Bad habit", "Good habit"],
-  ["Mainstream", "Niche"],
-  ["Low effort", "High effort"],
-  ["Simple", "Complicated"],
-  ["Childish", "Mature"],
-  ["Lazy", "Productive"],
-  ["Light", "Heavy"],
-  ["Overpaid", "Underpaid"],
-  ["Short-lived", "Lasts forever"],
-  ["Bad smell to wake up to", "Great smell to wake up to"],
-  ["Hard to sit on", "Comfortable to sit on"],
-  ["Normal thing to own", "Weird thing to own"],
-  ["Weak", "Strong"],
-  ["Tastes bad", "Tastes good"],
-  ["Unpopular opinion", "Popular opinion"],
-  ["Scary animal", "Cute animal"],
-  ["Worst vacation spot", "Best vacation spot"],
-  ["Calm", "Chaotic"],
-  ["Natural", "Artificial"],
-  ["Easy to draw", "Hard to draw"],
-  ["Ordinary", "Magical"],
-  ["Bad first date", "Great first date"],
-  ["Messy", "Tidy"],
-  ["Cringe", "Cool"],
-  ["Waste of money", "Worth every penny"],
-  ["Morning thing", "Night thing"],
-  ["Bad pizza topping", "Great pizza topping"],
-  ["Snack", "Full meal"],
-  ["Better hot", "Better cold"],
-  ["Hard to cook", "Easy to cook"],
-  ["Kid's drink", "Grown-up drink"],
-  ["Bad sandwich filling", "Great sandwich filling"],
-  ["Fancy restaurant", "Fast food"],
-  ["Overcooked", "Undercooked"],
-  ["Gross texture", "Satisfying texture"],
-  ["Bland", "Flavorful"],
-  ["Worst job", "Dream job"],
-  ["Boring hobby", "Fun hobby"],
-  ["Cheap date", "Expensive date"],
-  ["Rookie mistake", "Expert move"],
-  ["Easy to learn", "Hard to master"],
-  ["Bad advice", "Good advice"],
-  ["Lame excuse", "Great excuse"],
-  ["Bad name for a baby", "Great name for a baby"],
-  ["Bad name for a band", "Great name for a band"],
-  ["Bad name for a pet", "Great name for a pet"],
-  ["Underdressed", "Overdressed"],
-  ["Unfashionable", "Fashionable"],
-  ["Socially acceptable", "Socially unacceptable"],
-  ["Polite", "Rude"],
-  ["Normal at a wedding", "Weird at a wedding"],
-  ["Bad thing to say on a first date", "Good thing to say on a first date"],
-  ["Awkward silence", "Comfortable silence"],
-  ["Unlikeable character", "Likeable character"],
-  ["Sidekick", "Main character"],
-  ["Overhyped", "Lived up to the hype"],
-  ["Guilty pleasure", "Openly proud of"],
-  ["Worst chore", "Least bad chore"],
-  ["Bad smell", "Good smell"],
-  ["Annoying sound", "Pleasant sound"],
-  ["Quiet animal", "Noisy animal"],
-  ["Small animal", "Big animal"],
-  ["Bad pet for an apartment", "Great pet for an apartment"],
-  ["Wild", "Tame"],
-  ["Ocean creature", "Land creature"],
-  ["Fluffy", "Scaly"],
-  ["Least useful body part", "Most useful body part"],
-  ["Painless", "Painful"],
-  ["Easy to fake", "Impossible to fake"],
-  ["Lucky", "Unlucky"],
-  ["Trustworthy", "Shady"],
-  ["Harmless", "Deadly"],
-  ["Legal", "Illegal"],
-  ["Low risk", "High risk"],
-  ["Easy to forget", "Hard to forget"],
-  ["Ancient", "Modern"],
-  ["Dated", "Timeless"],
-  ["Obsolete technology", "Essential technology"],
-  ["Low-tech", "High-tech"],
-  ["Bad app", "Great app"],
-  ["Hard to use", "Easy to use"],
-  ["Worst invention", "Best invention"],
-  ["Cheap hobby", "Expensive hobby"],
-  ["Bad holiday", "Best holiday"],
-  ["Winter thing", "Summer thing"],
-  ["Rainy day activity", "Sunny day activity"],
-  ["Weekday activity", "Weekend activity"],
-  ["Done alone", "Done with friends"],
-  ["Hard to find", "Everywhere"],
-  ["Unpopular sport", "Popular sport"],
-  ["Boring sport to watch", "Exciting sport to watch"],
-  ["Easy sport", "Hard sport"],
-  ["Bad board game", "Great board game"],
-  ["Underrated movie", "Overrated movie"],
-  ["Kid's movie", "Adult movie"],
-  ["Bad sequel", "Great sequel"],
-  ["Comedy", "Tragedy"],
-  ["Realistic", "Fantasy"],
-  ["Bad song for a road trip", "Great song for a road trip"],
-  ["Bad song to dance to", "Great song to dance to"],
-  ["Bad book", "Great book"],
-  ["Boring subject at school", "Interesting subject at school"],
-  ["Easy exam", "Hard exam"],
-  ["Useless skill", "Life-saving skill"],
-  ["Bad first car", "Great first car"],
-  ["Bad place to live", "Great place to live"],
-  ["City", "Countryside"],
-  ["Bad place for a nap", "Great place for a nap"],
-  ["Bad hiding spot", "Great hiding spot"],
-  ["Bad thing to find in your pocket", "Great thing to find in your pocket"],
-  ["Clean", "Dirty"],
-  ["Smooth", "Rough"],
-  ["Dark", "Bright"],
-  ["Short", "Tall"],
-  ["Thin", "Thick"],
-  ["Narrow", "Wide"],
-  ["Floats", "Sinks"],
-  ["Flexible", "Rigid"],
-  ["Sharp", "Dull"],
-  ["Ugly building", "Beautiful building"],
-  ["Worst color for a car", "Best color for a car"],
-  ["Bad tattoo idea", "Good tattoo idea"],
-  ["Bad souvenir", "Great souvenir"],
-  ["Cheap-looking", "Luxurious"],
-  ["Bad thing to be addicted to", "Okay thing to be addicted to"],
-  ["Optimist", "Pessimist"],
-  ["Follower", "Leader"],
-  ["Bad roommate habit", "Great roommate habit"],
-  ["Mild inconvenience", "Total disaster"],
-  ["Bad Monday", "Great Monday"],
-  ["Tired", "Energetic"],
-  ["Hungry", "Full"],
-  ["Sleepy song", "Hype song"],
-  ["Overrated food", "Underrated food"],
-  ["Bad breakfast", "Great breakfast"],
-  ["Bad superhero name", "Great superhero name"],
-  ["Weak villain", "Terrifying villain"],
-  ["Mythical", "Real"],
-  ["Probably true", "Probably a myth"],
-  ["Worst way to die in a movie", "Coolest way to die in a movie"],
-  ["Bad reason to break up", "Good reason to break up"],
-  ["Easy to say sorry for", "Hard to say sorry for"],
-  ["Bad gift for a parent", "Great gift for a parent"],
-  ["Bad first impression", "Great first impression"],
-  ["Least romantic", "Most romantic"],
-  ["Boring compliment", "Amazing compliment"],
-  ["Small talk topic", "Deep talk topic"],
-  ["Worst smell in a car", "Best smell in a car"],
-  ["Nerdy", "Cool"],
-  ["Hipster", "Basic"],
-  ["Underrated celebrity", "Overrated celebrity"],
-  ["Unhelpful", "Helpful"],
-  ["Unreliable", "Reliable"],
-];
+const CARDS = window.TUNE_IN_CARDS;
 
 // ---------- Geometry ----------
 const CX = 200, CY = 200, R = 180;
@@ -312,7 +127,7 @@ function scoreFor(target, guess) {
   return 0;
 }
 
-// ---------- State ----------
+// ---------- State (shared by both modes; online mode fills it from the server) ----------
 const S = {
   players: ["Player 1", "Player 2"],
   rounds: 10,
@@ -330,6 +145,10 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">
 const psychic = () => S.players[S.round % 2];
 const guesser = () => S.players[(S.round + 1) % 2];
 const total = () => S.history.reduce((a, h) => a + h.points, 0);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
 
 function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
@@ -339,12 +158,12 @@ function drawCard() {
   if (!S.deck.length) S.deck = shuffle(CARDS.slice());
   S.card = S.deck.pop();
 }
-function setStatus() {
-  $status.innerHTML = `Round ${Math.min(S.round + 1, S.rounds)} / ${S.rounds}<br>Team score: <b>${total()}</b>`;
+function setStatus(prefix = "") {
+  $status.innerHTML = `${prefix}Round ${Math.min(S.round + 1, S.rounds)} / ${S.rounds}<br>Team score: <b>${total()}</b>`;
 }
 
 // ---------- Dial rendering ----------
-function dialSVG({ showTarget, showNeedle, interactive, shutter }) {
+function dialSVG({ showTarget, showNeedle, interactive, shutter, shutterOpen }) {
   const zones = ZONES.map(([o, p]) => {
     const a1 = S.target + o * BAND - BAND / 2, a2 = a1 + BAND;
     const [lx, ly] = pt((a1 + a2) / 2, R - 16);
@@ -363,7 +182,7 @@ function dialSVG({ showTarget, showNeedle, interactive, shutter }) {
     <defs><clipPath id="half"><rect x="0" y="0" width="400" height="${CY}"/></clipPath></defs>
     <path d="${wedge(0, 180, R)}" fill="var(--dial)" stroke="var(--line)" stroke-width="2"/>
     ${showTarget ? `<g id="zones">${zones}</g>` : ""}
-    ${shutter ? `<g clip-path="url(#half)"><path class="shutter" id="shutter" d="${wedge(0, 180, R + 1)}" fill="var(--shutter)"/></g>` : ""}
+    ${shutter ? `<g clip-path="url(#half)"><path class="shutter ${shutterOpen ? "open" : ""}" id="shutter" d="${wedge(0, 180, R + 1)}" fill="var(--shutter)"/></g>` : ""}
     ${ticks}
     ${showNeedle ? `
       <line id="needle" x1="${CX}" y1="${CY}" x2="${nx}" y2="${ny}" stroke="var(--needle)" stroke-width="5" stroke-linecap="round"/>
@@ -372,25 +191,30 @@ function dialSVG({ showTarget, showNeedle, interactive, shutter }) {
   </svg>`;
 }
 const cardHTML = () => `<div class="card"><span class="l">← ${esc(S.card[0])}</span><span class="r">${esc(S.card[1])} →</span></div>`;
+const clueHTML = () => `<div class="clue">${S.clue ? "“" + esc(S.clue) + "”" : '<span class="muted">Clue given out loud</span>'}</div>`;
 const legend = `<div class="legend"><span><i style="background:var(--z4)"></i>4 pts</span><span><i style="background:var(--z3)"></i>3 pts</span><span><i style="background:var(--z2)"></i>2 pts</span></div>`;
 
-function bindDial() {
+function moveNeedle(deg) {
+  const [nx, ny] = pt(deg, R - 6);
+  const n = document.getElementById("needle"), k = document.getElementById("knob");
+  if (!n) return;
+  n.setAttribute("x2", nx); n.setAttribute("y2", ny);
+  k.setAttribute("cx", nx); k.setAttribute("cy", ny);
+}
+function bindDial(onChange) {
   const svg = document.getElementById("dial");
   let dragging = false;
   const update = (deg) => {
     S.guess = clamp(deg, 0, 180);
-    const [nx, ny] = pt(S.guess, R - 6);
-    const n = document.getElementById("needle"), k = document.getElementById("knob");
-    n.setAttribute("x2", nx); n.setAttribute("y2", ny);
-    k.setAttribute("cx", nx); k.setAttribute("cy", ny);
+    moveNeedle(S.guess);
     svg.setAttribute("aria-valuenow", Math.round(S.guess));
+    if (onChange) onChange(S.guess);
   };
   const fromEvent = (e) => {
     const r = svg.getBoundingClientRect();
     const x = (e.clientX - r.left) * 400 / r.width - CX;
     const y = CY - (e.clientY - r.top) * 214 / r.height;
-    let deg = Math.atan2(Math.max(y, 0), -x) * 180 / Math.PI;
-    update(deg);
+    update(Math.atan2(Math.max(y, 0), -x) * 180 / Math.PI);
   };
   svg.addEventListener("pointerdown", e => { dragging = true; svg.setPointerCapture(e.pointerId); fromEvent(e); });
   svg.addEventListener("pointermove", e => dragging && fromEvent(e));
@@ -403,20 +227,67 @@ function bindDial() {
   });
 }
 
-// ---------- Screens ----------
-function screenSetup() {
+// Shared pieces of the reveal and end screens
+const RESULT_MSG = { 4: "Bullseye! 🎯 Perfectly in tune.", 3: "So close! 🔥", 2: "On the right wavelength. 👍", 0: "Missed it… 📡 Static on the line." };
+function revealHTML(pts, buttonHTML) {
+  return `
+    <div class="panel">
+      ${cardHTML()}
+      ${clueHTML()}
+      <div class="dialwrap">${dialSVG({ showTarget: true, showNeedle: true, shutter: true })}</div>
+      ${legend}
+      <div class="center" id="result" style="opacity:0;transition:opacity .4s">
+        <div class="big">+${pts}</div>
+        <p>${RESULT_MSG[pts]}</p>
+        <div class="row">${buttonHTML}</div>
+      </div>
+    </div>`;
+}
+function playReveal() {
+  requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById("shutter").classList.add("open")));
+  setTimeout(() => { const r = document.getElementById("result"); if (r) r.style.opacity = 1; }, 1000);
+}
+function endHTML(buttonsHTML) {
+  const t = total(), max = S.rounds * 4, pct = t / max;
+  const rating = pct >= .8 ? "Telepathic. Are you sure you're two people?" :
+                 pct >= .6 ? "Strongly in sync — great teamwork!" :
+                 pct >= .4 ? "Solid connection with a bit of static." :
+                 pct >= .2 ? "Occasionally on the same channel." : "Totally different frequencies. Rematch?";
+  const by = [0, 1].map(i => S.history.filter(h => h.psychic === i).reduce((a, h) => a + h.points, 0));
+  const best = by[0] === by[1] ? "It's a tie for best clue-giver!" : `Best clue-giver: <b>${esc(S.players[by[0] > by[1] ? 0 : 1])}</b>`;
+  return `
+    <div class="panel center">
+      <p class="muted">Final team score</p>
+      <div class="big">${t} <span class="muted" style="font-size:1.2rem">/ ${max}</span></div>
+      <p>${rating}</p>
+      <p>${best}</p>
+      <div class="row">${buttonsHTML}</div>
+    </div>
+    <div class="panel">
+      <h2>Round by round</h2>
+      <div style="overflow-x:auto">
+      <table>
+        <tr><th>#</th><th>Clue-giver</th><th>Spectrum</th><th>Clue</th><th class="n">Pts</th></tr>
+        ${S.history.map((h, i) => `<tr><td>${i + 1}</td><td>${esc(S.players[h.psychic])}</td><td>${esc(h.card[0])} ↔ ${esc(h.card[1])}</td><td>${h.clue ? esc(h.clue) : '<span class="muted">(spoken)</span>'}</td><td class="n">${h.points}</td></tr>`).join("")}
+        <tr><td></td><td colspan="3"><b>${esc(S.players[0])}</b> as clue-giver: ${by[0]} · <b>${esc(S.players[1])}</b>: ${by[1]}</td><td class="n"><b>${t}</b></td></tr>
+      </table>
+      </div>
+    </div>`;
+}
+const roundOptions = () => [6, 8, 10, 12, 16].map(n => `<option value="${n}" ${n === S.rounds ? "selected" : ""}>${n} rounds (${n / 2} each as clue-giver)</option>`).join("");
+
+// ---------- Home ----------
+function screenHome() {
+  stopPolling();
   $status.textContent = "";
   $app.innerHTML = `
     <div class="panel">
       <h2>A two-player mind-reading game</h2>
       <p class="muted">One of you secretly sees where a target sits on a spectrum and gives a clue. The other turns the dial to where they think it is. Swap roles every round and score as a team.</p>
-      <label for="p1">Player 1</label><input type="text" id="p1" value="${esc(S.players[0])}" maxlength="20">
-      <label for="p2">Player 2</label><input type="text" id="p2" value="${esc(S.players[1])}" maxlength="20">
-      <label for="rounds">Rounds</label>
-      <select id="rounds">
-        ${[6, 8, 10, 12, 16].map(n => `<option value="${n}" ${n === S.rounds ? "selected" : ""}>${n} rounds (${n / 2} each as clue-giver)</option>`).join("")}
-      </select>
-      <div class="row"><button id="start">Start game</button></div>
+      <div class="row">
+        <button id="online">Play online (two phones)</button>
+        <button class="secondary" id="local">Play on one phone</button>
+      </div>
     </div>
     <div class="panel">
       <h2>How to play</h2>
@@ -426,8 +297,27 @@ function screenSetup() {
         <li><b>Guesser</b> (who didn't see the target) turns the dial and locks in.</li>
         <li>Reveal! Bullseye = 4, close = 3, near = 2. Swap roles each round.</li>
       </ol>
-      <p class="muted">Playing on one device: pass it between you when prompted and don't peek.</p>
     </div>`;
+  document.getElementById("online").onclick = () => screenOnlineStart();
+  document.getElementById("local").onclick = screenSetup;
+}
+
+// =====================================================================
+// One-phone mode (pass the device back and forth)
+// =====================================================================
+function screenSetup() {
+  $status.textContent = "";
+  $app.innerHTML = `
+    <div class="panel">
+      <h2>Play on one phone</h2>
+      <p class="muted">You'll pass the phone between you when prompted. Don't peek!</p>
+      <label for="p1">Player 1</label><input type="text" id="p1" value="${esc(S.players[0])}" maxlength="20">
+      <label for="p2">Player 2</label><input type="text" id="p2" value="${esc(S.players[1])}" maxlength="20">
+      <label for="rounds">Rounds</label>
+      <select id="rounds">${roundOptions()}</select>
+      <div class="row"><button id="start">Start game</button><button class="secondary" id="back">Back</button></div>
+    </div>`;
+  document.getElementById("back").onclick = screenHome;
   document.getElementById("start").onclick = () => {
     S.players = [document.getElementById("p1").value.trim() || "Player 1", document.getElementById("p2").value.trim() || "Player 2"];
     S.rounds = +document.getElementById("rounds").value;
@@ -485,7 +375,7 @@ function screenGuess() {
     <div class="panel">
       <p class="muted">${esc(guesser())}, drag the dial (or use arrow keys) to where ${esc(psychic())}'s clue belongs.</p>
       ${cardHTML()}
-      <div class="clue">${S.clue ? "“" + esc(S.clue) + "”" : '<span class="muted">Clue given out loud</span>'}</div>
+      ${clueHTML()}
       <div class="dialwrap">${dialSVG({ showTarget: false, showNeedle: true, interactive: true })}</div>
       <div class="row"><button id="lock">Lock in guess</button></div>
     </div>`;
@@ -497,22 +387,9 @@ function screenReveal() {
   const pts = scoreFor(S.target, S.guess);
   S.history.push({ psychic: S.round % 2, card: S.card, clue: S.clue, points: pts });
   setStatus();
-  const msg = { 4: "Bullseye! 🎯 Perfectly in tune.", 3: "So close! 🔥", 2: "On the right wavelength. 👍", 0: "Missed it… 📡 Static on the line." }[pts];
   const last = S.round + 1 >= S.rounds;
-  $app.innerHTML = `
-    <div class="panel">
-      ${cardHTML()}
-      <div class="clue">${S.clue ? "“" + esc(S.clue) + "”" : '<span class="muted">Clue given out loud</span>'}</div>
-      <div class="dialwrap">${dialSVG({ showTarget: true, showNeedle: true, shutter: true })}</div>
-      ${legend}
-      <div class="center" id="result" style="opacity:0;transition:opacity .4s">
-        <div class="big">+${pts}</div>
-        <p>${msg}</p>
-        <div class="row"><button id="next">${last ? "See final results" : "Next round"}</button></div>
-      </div>
-    </div>`;
-  requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById("shutter").classList.add("open")));
-  setTimeout(() => document.getElementById("result").style.opacity = 1, 1000);
+  $app.innerHTML = revealHTML(pts, `<button id="next">${last ? "See final results" : "Next round"}</button>`);
+  playReveal();
   document.getElementById("next").onclick = () => {
     S.round++;
     if (S.round >= S.rounds) screenEnd(); else newRound();
@@ -521,34 +398,282 @@ function screenReveal() {
 
 function screenEnd() {
   $status.textContent = "";
-  const t = total(), max = S.rounds * 4, pct = t / max;
-  const rating = pct >= .8 ? "Telepathic. Are you sure you're two people?" :
-                 pct >= .6 ? "Strongly in sync — great teamwork!" :
-                 pct >= .4 ? "Solid connection with a bit of static." :
-                 pct >= .2 ? "Occasionally on the same channel." : "Totally different frequencies. Rematch?";
-  const by = [0, 1].map(i => S.history.filter(h => h.psychic === i).reduce((a, h) => a + h.points, 0));
-  const best = by[0] === by[1] ? "It's a tie for best clue-giver!" : `Best clue-giver: <b>${esc(S.players[by[0] > by[1] ? 0 : 1])}</b>`;
-  $app.innerHTML = `
-    <div class="panel center">
-      <p class="muted">Final team score</p>
-      <div class="big">${t} <span class="muted" style="font-size:1.2rem">/ ${max}</span></div>
-      <p>${rating}</p>
-      <p>${best}</p>
-      <div class="row"><button id="again">Play again</button><button class="secondary" id="setup">Change players</button></div>
-    </div>
-    <div class="panel">
-      <h2>Round by round</h2>
-      <table>
-        <tr><th>#</th><th>Clue-giver</th><th>Spectrum</th><th>Clue</th><th class="n">Pts</th></tr>
-        ${S.history.map((h, i) => `<tr><td>${i + 1}</td><td>${esc(S.players[h.psychic])}</td><td>${esc(h.card[0])} ↔ ${esc(h.card[1])}</td><td>${h.clue ? esc(h.clue) : '<span class="muted">(spoken)</span>'}</td><td class="n">${h.points}</td></tr>`).join("")}
-        <tr><td></td><td colspan="3"><b>${esc(S.players[0])}</b> as clue-giver: ${by[0]} · <b>${esc(S.players[1])}</b>: ${by[1]}</td><td class="n"><b>${t}</b></td></tr>
-      </table>
-    </div>`;
+  $app.innerHTML = endHTML(`<button id="again">Play again</button><button class="secondary" id="setup">Change players</button>`);
   document.getElementById("again").onclick = () => { S.round = 0; S.history = []; newRound(); };
   document.getElementById("setup").onclick = screenSetup;
 }
 
-screenSetup();
+// =====================================================================
+// Online mode (two phones, state kept on the server)
+// =====================================================================
+const API = "api/room";
+const O = { code: null, view: null, key: null, timer: null, polling: false, busy: false };
+let PID = store.get("tunein-pid");
+if (!PID) {
+  PID = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, "0")).join("");
+  store.set("tunein-pid", PID);
+}
+
+async function apiCall(method, body) {
+  let r;
+  try {
+    r = method === "GET"
+      ? await fetch(`${API}?code=${encodeURIComponent(O.code)}&pid=${PID}`, { cache: "no-store" })
+      : await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, pid: PID }) });
+  } catch {
+    throw new Error("Couldn't reach the game server. Check your internet connection.");
+  }
+  const j = await r.json().catch(() => ({ error: `The game server isn't available here (error ${r.status}). Online play needs the hosted version of the game.` }));
+  if (!r.ok || j.error) throw new Error(j.error || `Server error ${r.status}`);
+  return j;
+}
+// Actions go out one at a time, in order, so a late "move" can never land after "lock".
+let queue = Promise.resolve();
+function send(body) {
+  const p = queue.then(() => apiCall("POST", body));
+  queue = p.catch(() => {});
+  return p.then(onView, showError);
+}
+function showError(e) {
+  let box = document.getElementById("err");
+  if (!box) {
+    box = document.createElement("p");
+    box.id = "err"; box.className = "error"; box.setAttribute("role", "alert");
+    $app.prepend(box);
+  }
+  box.textContent = e.message;
+}
+function startPolling() {
+  stopPolling();
+  O.timer = setInterval(async () => {
+    if (document.hidden || O.polling || !O.code) return;
+    O.polling = true;
+    try { onView(await apiCall("GET")); } catch (e) { showError(e); }
+    finally { O.polling = false; }
+  }, 1200);
+}
+function stopPolling() { clearInterval(O.timer); O.timer = null; }
+function setRoomInURL(code) {
+  try { history.replaceState(null, "", code ? `?room=${code}` : location.pathname); } catch {}
+}
+
+function screenOnlineStart(prefillCode = "", errorMsg = "") {
+  stopPolling();
+  $status.textContent = "";
+  const name = store.get("tunein-name") || "";
+  $app.innerHTML = `
+    <div class="panel">
+      <h2>Play online</h2>
+      <p class="muted">Each of you plays on your own phone. One person creates a room and sends the code to the other.</p>
+      ${errorMsg ? `<p class="error" role="alert">${esc(errorMsg)}</p>` : ""}
+      <label for="name">Your name</label>
+      <input type="text" id="name" maxlength="20" value="${esc(name)}" placeholder="e.g. Sam" autocomplete="nickname">
+    </div>
+    <div class="panel">
+      <h2>Join a friend's room</h2>
+      <label for="code">Room code</label>
+      <input type="text" id="code" maxlength="4" value="${esc(prefillCode)}" placeholder="ABCD" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:.2em">
+      <div class="row"><button id="join">Join room</button></div>
+    </div>
+    <div class="panel">
+      <h2>…or create a new room</h2>
+      <label for="rounds">Rounds</label>
+      <select id="rounds">${roundOptions()}</select>
+      <div class="row"><button id="create" class="${prefillCode ? "secondary" : ""}">Create room</button><button class="secondary" id="back">Back</button></div>
+    </div>`;
+  const getName = () => {
+    const n = document.getElementById("name").value.trim();
+    store.set("tunein-name", n);
+    return n;
+  };
+  const busy = (on) => ["join", "create"].forEach(id => document.getElementById(id).disabled = on);
+  document.getElementById("back").onclick = () => { setRoomInURL(null); screenHome(); };
+  document.getElementById("create").onclick = async () => {
+    busy(true);
+    try {
+      const v = await apiCall("POST", { action: "create", name: getName() || "Player 1", rounds: +document.getElementById("rounds").value });
+      enterRoom(v);
+    } catch (e) { busy(false); showError(e); }
+  };
+  document.getElementById("join").onclick = async () => {
+    const code = document.getElementById("code").value.trim().toUpperCase();
+    if (!/^[A-Z]{4}$/.test(code)) return showError(new Error("Room codes are 4 letters."));
+    busy(true);
+    O.code = code;
+    try { enterRoom(await apiCall("POST", { action: "join", code, name: getName() || "Player 2" })); }
+    catch (e) { busy(false); showError(e); }
+  };
+}
+
+function enterRoom(v) {
+  O.code = v.code; O.view = null; O.key = null;
+  store.set("tunein-room", v.code);
+  setRoomInURL(v.code);
+  onView(v);
+  startPolling();
+}
+
+// Called with every fresh copy of the room from the server.
+function onView(v) {
+  if (!v || (O.view && v.v < O.view.v && v.game === O.view.game)) return; // ignore out-of-date replies
+  const prevPhase = O.view && O.view.phase;
+  O.view = v;
+  S.players = v.players.length > 1 ? v.players : [v.players[0], "…"];
+  S.rounds = v.rounds; S.round = v.round; S.history = v.history;
+  S.card = v.card; S.clue = v.clue;
+  if (v.target != null) S.target = v.target;
+
+  const key = [v.game, v.phase, v.round, v.card && v.card.join("|"), v.players.length].join(":");
+  if (key !== O.key) {
+    O.key = key;
+    S.guess = v.guess;
+    renderOnline(prevPhase);
+  } else if (v.phase === "guess" && v.you !== (v.round + 1) % 2) {
+    S.guess = v.guess;              // watch the guesser's needle move live
+    moveNeedle(S.guess);
+  }
+}
+
+function renderOnline(prevPhase) {
+  const v = O.view;
+  const me = v.you, psy = v.psychic, gue = (psy + 1) % 2;
+  const iAmPsychic = me === psy, iAmGuesser = me === gue;
+  const roomTag = `Room <b>${esc(v.code)}</b> · `;
+
+  if (me < 0) {
+    $status.textContent = "";
+    $app.innerHTML = `<div class="panel center"><h2>This room is full</h2><p>Room ${esc(v.code)} already has two players.</p>
+      <div class="row"><button id="home">Back</button></div></div>`;
+    document.getElementById("home").onclick = () => { setRoomInURL(null); screenOnlineStart(); };
+    stopPolling();
+    return;
+  }
+
+  if (v.phase === "lobby") {
+    $status.innerHTML = `${roomTag}waiting`;
+    const link = `${location.origin}${location.pathname}?room=${v.code}`;
+    $app.innerHTML = `
+      <div class="panel center">
+        <p class="muted">Send your friend this room code</p>
+        <div class="code">${esc(v.code)}</div>
+        <p class="muted">or this link:</p>
+        <p class="link" id="link">${esc(link)}</p>
+        <div class="row"><button id="copy">Copy link</button></div>
+        <p class="muted waiting">Waiting for your friend to join…</p>
+      </div>`;
+    document.getElementById("copy").onclick = async (e) => {
+      try { await navigator.clipboard.writeText(link); e.target.textContent = "Copied!"; }
+      catch { const r = document.createRange(); r.selectNodeContents(document.getElementById("link")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); e.target.textContent = "Press copy on your keyboard"; }
+    };
+    return;
+  }
+
+  setStatus(roomTag);
+  const youAre = iAmPsychic ? "You're the clue-giver" : "You're the guesser";
+
+  if (v.phase === "clue" && iAmPsychic) {
+    $app.innerHTML = `
+      <div class="panel">
+        <p class="muted">Round ${v.round + 1}. ${youAre}. Only you can see the target.</p>
+        ${cardHTML()}
+        <div class="dialwrap">${dialSVG({ showTarget: true, showNeedle: false })}</div>
+        ${legend}
+        <label for="clue">Your clue</label>
+        <input type="text" id="clue" maxlength="60" autocomplete="off" placeholder="e.g. a cup of tea">
+        <div class="row">
+          <button id="done">Send clue</button>
+          <button class="secondary" id="reroll">New spectrum</button>
+        </div>
+      </div>`;
+    const done = () => {
+      const clue = document.getElementById("clue").value.trim();
+      if (!clue) return showError(new Error("Type a clue first, so " + guesser() + " can see it."));
+      document.getElementById("done").disabled = true;
+      send({ action: "clue", code: v.code, clue });
+    };
+    document.getElementById("done").onclick = done;
+    document.getElementById("clue").addEventListener("keydown", e => { if (e.key === "Enter") done(); });
+    document.getElementById("reroll").onclick = (e) => { e.target.disabled = true; send({ action: "reroll", code: v.code }); };
+    return;
+  }
+
+  if (v.phase === "clue") {
+    $app.innerHTML = `
+      <div class="panel">
+        <p class="muted">Round ${v.round + 1}. ${youAre}.</p>
+        ${cardHTML()}
+        <div class="dialwrap">${dialSVG({ showTarget: false, showNeedle: false, shutter: true })}</div>
+        <p class="center waiting">${esc(psychic())} is thinking of a clue…</p>
+      </div>`;
+    return;
+  }
+
+  if (v.phase === "guess" && iAmGuesser) {
+    $app.innerHTML = `
+      <div class="panel">
+        <p class="muted">Round ${v.round + 1}. ${youAre}. Drag the dial to where ${esc(psychic())}'s clue belongs.</p>
+        ${cardHTML()}
+        ${clueHTML()}
+        <div class="dialwrap">${dialSVG({ showTarget: false, showNeedle: true, interactive: true })}</div>
+        <div class="row"><button id="lock">Lock in guess</button></div>
+      </div>`;
+    // Share the needle with the clue-giver as it moves, at most ~4 times a second.
+    let pending = false;
+    bindDial(() => {
+      if (pending) return;
+      pending = true;
+      setTimeout(() => { pending = false; if (O.view.phase === "guess") send({ action: "move", code: v.code, guess: S.guess }); }, 250);
+    });
+    document.getElementById("lock").onclick = (e) => { e.target.disabled = true; send({ action: "lock", code: v.code, guess: S.guess }); };
+    return;
+  }
+
+  if (v.phase === "guess") {
+    $app.innerHTML = `
+      <div class="panel">
+        <p class="muted">Round ${v.round + 1}. ${youAre}. Watch ${esc(guesser())} turn the dial.</p>
+        ${cardHTML()}
+        ${clueHTML()}
+        <div class="dialwrap">${dialSVG({ showTarget: true, showNeedle: true })}</div>
+        ${legend}
+        <p class="center waiting">${esc(guesser())} is guessing…</p>
+      </div>`;
+    return;
+  }
+
+  if (v.phase === "reveal") {
+    const last = v.history[v.history.length - 1];
+    S.guess = last.guess;
+    const final = v.round + 1 >= v.rounds;
+    $app.innerHTML = revealHTML(last.points, `<button id="next">${final ? "See final results" : "Next round"}</button>`);
+    if (prevPhase === "guess") playReveal();
+    else { document.getElementById("shutter").classList.add("open"); document.getElementById("result").style.opacity = 1; }
+    document.getElementById("next").onclick = (e) => { e.target.disabled = true; send({ action: "next", code: v.code, round: v.round }); };
+    return;
+  }
+
+  if (v.phase === "end") {
+    $status.innerHTML = `${roomTag}game over`;
+    $app.innerHTML = endHTML(`<button id="again">Play again</button><button class="secondary" id="leave">Leave room</button>`);
+    document.getElementById("again").onclick = (e) => { e.target.disabled = true; send({ action: "again", code: v.code, game: v.game }); };
+    document.getElementById("leave").onclick = () => { stopPolling(); O.code = null; setRoomInURL(null); screenHome(); };
+  }
+}
+
+// ---------- Start ----------
+(async function boot() {
+  const code = (new URLSearchParams(location.search).get("room") || "").toUpperCase();
+  if (!/^[A-Z]{4}$/.test(code)) return screenHome();
+  O.code = code;
+  try {
+    const v = await apiCall("GET");
+    if (v.you >= 0) return enterRoom(v);                 // coming back to a game you're in
+    if (v.players.length >= 2) return screenOnlineStart("", `Room ${code} already has two players.`);
+    screenOnlineStart(code);
+  } catch (e) {
+    screenOnlineStart(code, e.message);
+  }
+})();
 </script>
 </body>
 </html>
