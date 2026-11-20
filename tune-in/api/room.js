@@ -13,11 +13,17 @@ const DB_TOKEN = env("KV_REST_API_TOKEN") || env("UPSTASH_REDIS_REST_TOKEN");
 
 // ---------- storage ----------
 const mem = new Map(); // only used for local testing (TUNE_IN_DEV=1)
+let dbMs = 0, dbCalls = 0;
 async function redis(cmd) {
+  const t0 = Date.now();
+  try { return await redisRaw(cmd); } finally { dbMs += Date.now() - t0; dbCalls++; }
+}
+async function redisRaw(cmd) {
   if (!DB_URL) {
     if (process.env.TUNE_IN_DEV) {
       const [op, key, val, ...opts] = cmd;
       if (op === "GET") return mem.has(key) ? mem.get(key) : null;
+      if (op === "MGET") return [key, val, ...opts].map(k => mem.has(k) ? mem.get(k) : null);
       if (op === "SET") {
         if (opts.includes("NX") && mem.has(key)) return null;
         mem.set(key, val); return "OK";
@@ -35,12 +41,26 @@ async function redis(cmd) {
   return j.result;
 }
 const roomKey = code => `tunein:room:${code}`;
-async function load(code) {
+// The guesser's live needle lives in its own key, so dragging never rewrites (or races with) the room.
+const needleKey = code => `tunein:needle:${code}`;
+function checkCode(code) {
   code = String(code || "").toUpperCase();
   if (!/^[A-Z]{4}$/.test(code)) throw httpError(400, "Room codes are 4 letters.");
-  const raw = await redis(["GET", roomKey(code)]);
+  return code;
+}
+async function load(code, withNeedle = false) {
+  code = checkCode(code);
+  let raw, needle = null;
+  if (withNeedle) [raw, needle] = await redis(["MGET", roomKey(code), needleKey(code)]);
+  else raw = await redis(["GET", roomKey(code)]);
   if (!raw) throw httpError(404, `There's no room ${code}. It may have expired, so check the code or create a new room.`);
-  return JSON.parse(raw);
+  const room = JSON.parse(raw);
+  // needle is "game:round:degrees"; only use it if it belongs to the current round
+  if (needle && room.phase === "guess") {
+    const [g, r, deg] = needle.split(":");
+    if (+g === room.game && +r === room.round) room.guess = +deg;
+  }
+  return room;
 }
 async function save(room) {
   room.v++;
@@ -109,6 +129,14 @@ async function act(b) {
     throw httpError(503, "Couldn't find a free room code. Try again.");
   }
 
+  if (b.action === "move") {
+    // One write, no read: cheap enough to send several times a second while dragging.
+    const code = checkCode(b.code);
+    const deg = clamp(+b.guess || 0, 0, 180).toFixed(1);
+    await redis(["SET", needleKey(code), `${+b.game || 0}:${+b.round || 0}:${deg}`, "EX", TTL]);
+    return { ok: true };
+  }
+
   const room = await load(b.code);
   const you = seat(room, pid);
 
@@ -133,10 +161,6 @@ async function act(b) {
       if (room.phase !== "clue" || !isPsychic) throw httpError(409, "It's not your turn to give a clue.");
       room.clue = String(b.clue || "").trim().slice(0, 60);
       room.phase = "guess";
-      break;
-    case "move":
-      if (room.phase !== "guess" || isPsychic) return view(room, pid); // stale drag after lock-in: ignore quietly
-      room.guess = clamp(+b.guess || 0, 0, 180);
       break;
     case "lock": {
       if (room.phase !== "guess" || isPsychic) throw httpError(409, "It's not your turn to guess.");
@@ -170,11 +194,13 @@ async function act(b) {
 module.exports = async (req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "no-store");
+  dbMs = 0; dbCalls = 0;
+  const t0 = Date.now();
   try {
     let out;
     if (req.method === "GET") {
       const q = new URL(req.url, "http://localhost").searchParams;
-      out = view(await load(q.get("code")), q.get("pid") || "");
+      out = view(await load(q.get("code"), true), q.get("pid") || "");
     } else if (req.method === "POST") {
       const b = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
       out = await act(b);
@@ -182,6 +208,7 @@ module.exports = async (req, res) => {
       throw httpError(405, "Use GET or POST.");
     }
     res.statusCode = 200;
+    res.setHeader("Server-Timing", `db;desc="${dbCalls} calls";dur=${dbMs}, total;dur=${Date.now() - t0}`);
     res.end(JSON.stringify(out));
   } catch (e) {
     res.statusCode = e.status || 500;

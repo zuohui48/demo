@@ -617,14 +617,25 @@ function renderOnline(prevPhase) {
         <div class="dialwrap">${dialSVG({ showTarget: false, showNeedle: true, interactive: true })}</div>
         <div class="row"><button id="lock">Lock in guess</button></div>
       </div>`;
-    // Share the needle with the clue-giver as it moves, at most ~4 times a second.
-    let pending = false;
-    bindDial(() => {
-      if (pending) return;
-      pending = true;
-      setTimeout(() => { pending = false; if (O.view.phase === "guess") send({ action: "move", code: v.code, guess: S.guess }); }, 250);
-    });
-    document.getElementById("lock").onclick = (e) => { e.target.disabled = true; send({ action: "lock", code: v.code, guess: S.guess }); };
+    // Share the needle with the clue-giver as it moves. At most one update is in flight and only the
+    // latest position is sent, so updates never pile up. They skip the action queue, so "Lock in" never waits on them.
+    let inFlight = false, dirty = false, locked = false;
+    const pushNeedle = async () => {
+      if (inFlight || locked) { dirty = true; return; }
+      inFlight = true; dirty = false;
+      try { await apiCall("POST", { action: "move", code: v.code, game: v.game, round: v.round, guess: S.guess }); } catch {}
+      inFlight = false;
+      if (dirty && !locked) setTimeout(pushNeedle, 150);
+    };
+    bindDial(pushNeedle);
+    document.getElementById("lock").onclick = (e) => {
+      locked = true;
+      e.target.disabled = true; e.target.textContent = "Locking in…";
+      send({ action: "lock", code: v.code, guess: S.guess }).then(() => {
+        const btn = document.getElementById("lock");     // still here only if the lock failed
+        if (btn) { btn.disabled = false; btn.textContent = "Lock in guess"; locked = false; }
+      });
+    };
     return;
   }
 
@@ -648,7 +659,7 @@ function renderOnline(prevPhase) {
     $app.innerHTML = revealHTML(last.points, `<button id="next">${final ? "See final results" : "Next round"}</button>`);
     if (prevPhase === "guess") playReveal();
     else { document.getElementById("shutter").classList.add("open"); document.getElementById("result").style.opacity = 1; }
-    document.getElementById("next").onclick = (e) => { e.target.disabled = true; send({ action: "next", code: v.code, round: v.round }); };
+    document.getElementById("next").onclick = (e) => { e.target.disabled = true; e.target.textContent = "Loading…"; send({ action: "next", code: v.code, round: v.round }); };
     return;
   }
 
