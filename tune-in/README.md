@@ -17,5 +17,5 @@
 ## Hosting on Vercel
 Deploy this folder as a Vercel project, then connect an **Upstash for Redis** store to it
 (Project → Storage → Create Database → Upstash for Redis, free plan) and redeploy.
-The function reads `KV_REST_API_URL` / `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`).
+The function reads `KV_REST_API_URL` / `KV_REST_API_TOKEN` (any prefix, e.g. `TUNE_IN_KV_REST_API_URL`, or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`).
 Rooms expire after 24 hours of inactivity.

@@ -6,8 +6,10 @@ const CARDS = require("../cards.js");
 const TTL = 60 * 60 * 24;            // rooms expire after a day of inactivity
 const BAND = 7;                      // must match the page's scoring bands
 const ROUND_OPTIONS = [6, 8, 10, 12, 16];
-const DB_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const DB_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+// Vercel's Upstash integration names these KV_REST_API_*, optionally with a custom prefix (e.g. TUNE_IN_).
+const env = suffix => process.env[Object.keys(process.env).find(k => k === suffix || k.endsWith("_" + suffix)) || ""];
+const DB_URL = env("KV_REST_API_URL") || env("UPSTASH_REDIS_REST_URL");
+const DB_TOKEN = env("KV_REST_API_TOKEN") || env("UPSTASH_REDIS_REST_TOKEN");
 
 // ---------- storage ----------
 const mem = new Map(); // only used for local testing (TUNE_IN_DEV=1)
